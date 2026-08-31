@@ -1,13 +1,29 @@
 from pydantic import BaseModel
 
 
-class ImageRagResult(BaseModel):
+class ImageRagResult(
+    BaseModel
+):
+
     rank: int
+
     food_name: str
+
     image_path: str
+
+    s3_key: str
+
+    image_url: str
+
     similarity: float
 
 
-class ImageRagResponse(BaseModel):
+class ImageRagResponse(
+    BaseModel
+):
+
     query_description: str
-    results: list[ImageRagResult]
+
+    results: list[
+        ImageRagResult
+    ]

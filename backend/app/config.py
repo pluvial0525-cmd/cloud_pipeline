@@ -5,15 +5,10 @@ from dotenv import load_dotenv
 
 
 # =========================================================
-# 프로젝트 루트 경로
+# 프로젝트 경로
 # =========================================================
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-
-
-# =========================================================
-# .env 경로
-# =========================================================
 
 ENV_PATH = BASE_DIR / ".env"
 
@@ -23,12 +18,12 @@ ENV_PATH = BASE_DIR / ".env"
 # =========================================================
 
 load_dotenv(
-    dotenv_path=ENV_PATH
+    dotenv_path=ENV_PATH,
 )
 
 
 # =========================================================
-# 환경 변수
+# OpenAI
 # =========================================================
 
 OPENAI_API_KEY = os.getenv(
@@ -40,3 +35,23 @@ if not OPENAI_API_KEY:
     raise ValueError(
         "OPENAI_API_KEY가 설정되어 있지 않습니다."
     )
+
+
+# =========================================================
+# AWS S3
+# =========================================================
+
+AWS_REGION = os.getenv(
+    "AWS_REGION",
+    "ap-northeast-2",
+)
+
+AWS_S3_BUCKET = os.getenv(
+    "AWS_S3_BUCKET",
+    "pluvial-s3-resource",
+)
+
+AWS_S3_IMAGE_PREFIX = os.getenv(
+    "AWS_S3_IMAGE_PREFIX",
+    "images",
+)

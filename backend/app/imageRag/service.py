@@ -6,19 +6,42 @@ from pathlib import Path
 
 from openai import OpenAI
 
-from app.config import OPENAI_API_KEY
+from app.config import (
+    AWS_S3_IMAGE_PREFIX,
+    OPENAI_API_KEY,
+)
 
+from app.storage.s3 import (
+    get_image,
+    get_image_url,
+    list_images,
+    normalize_s3_key,
+)
+
+
+# =========================================================
+# OpenAI Client
+# =========================================================
 
 client = OpenAI(
     api_key=OPENAI_API_KEY,
 )
 
 
-BASE_DIR = Path(__file__).resolve().parents[2]
+# =========================================================
+# 경로
+# =========================================================
 
-IMAGE_DIR = BASE_DIR / "images"
+BASE_DIR = (
+    Path(__file__)
+    .resolve()
+    .parents[2]
+)
 
-DB_PATH = BASE_DIR / "image_rag.db"
+DB_PATH = (
+    BASE_DIR
+    / "image_rag.db"
+)
 
 
 IMAGE_EXTENSIONS = {
@@ -75,9 +98,11 @@ def get_mime_type(
     filename: str,
 ) -> str:
 
-    suffix = Path(
-        filename
-    ).suffix.lower()
+    suffix = (
+        Path(filename)
+        .suffix
+        .lower()
+    )
 
     if suffix == ".png":
         return "image/png"
@@ -89,16 +114,22 @@ def get_mime_type(
 
 
 # =========================================================
-# 이미지 → base64
+# 이미지 → Base64
 # =========================================================
 
 def encode_image_bytes(
     image_bytes: bytes,
 ) -> str:
 
-    return base64.b64encode(
-        image_bytes
-    ).decode("utf-8")
+    return (
+        base64
+        .b64encode(
+            image_bytes
+        )
+        .decode(
+            "utf-8"
+        )
+    )
 
 
 # =========================================================
@@ -111,23 +142,33 @@ def describe_image(
     filename: str,
 ) -> str:
 
-    base64_image = encode_image_bytes(
-        image_bytes
+    base64_image = (
+        encode_image_bytes(
+            image_bytes
+        )
     )
 
-    mime_type = get_mime_type(
-        filename
+    mime_type = (
+        get_mime_type(
+            filename
+        )
     )
 
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": """
+    response = (
+        client.responses.create(
+            model="gpt-4.1-mini",
+            input=[
+                {
+                    "role":
+                        "user",
+
+                    "content": [
+                        {
+                            "type":
+                                "input_text",
+
+                            "text":
+                                """
 이 이미지에 있는 한국 음식이 무엇인지 분석해주세요.
 
 검색용 Image RAG 임베딩으로 사용할 것이므로
@@ -137,40 +178,49 @@ def describe_image(
 음식 이름을 알 수 있다면
 가장 먼저 음식 이름을 작성해주세요.
 """,
-                    },
-                    {
-                        "type": "input_image",
-                        "image_url": (
-                            f"data:{mime_type};"
-                            f"base64,{base64_image}"
-                        ),
-                    },
-                ],
-            }
-        ],
+                        },
+                        {
+                            "type":
+                                "input_image",
+
+                            "image_url": (
+                                f"data:"
+                                f"{mime_type};"
+                                f"base64,"
+                                f"{base64_image}"
+                            ),
+                        },
+                    ],
+                }
+            ],
+        )
     )
 
-    return response.output_text
+    return (
+        response.output_text
+    )
 
 
 # =========================================================
-# 파일 이미지 설명
+# S3 이미지 설명
+# build_embeddings 용
 # =========================================================
 
-def describe_file_image(
-    image_path: Path,
+def describe_s3_image(
+    s3_key: str,
 ) -> str:
 
-    with open(
-        image_path,
-        "rb",
-    ) as f:
+    image_bytes = get_image(
+        s3_key
+    )
 
-        image_bytes = f.read()
+    filename = (
+        Path(s3_key).name
+    )
 
     return describe_image(
         image_bytes=image_bytes,
-        filename=image_path.name,
+        filename=filename,
     )
 
 
@@ -182,12 +232,20 @@ def create_embedding(
     text: str,
 ) -> list[float]:
 
-    response = client.embeddings.create(
-        model="text-embedding-3-small",
-        input=text,
+    response = (
+        client.embeddings.create(
+            model=(
+                "text-embedding-3-small"
+            ),
+            input=text,
+        )
     )
 
-    return response.data[0].embedding
+    return (
+        response
+        .data[0]
+        .embedding
+    )
 
 
 # =========================================================
@@ -237,29 +295,68 @@ def cosine_similarity(
 
 
 # =========================================================
-# 이미지 파일 목록
+# S3 이미지 목록
 # =========================================================
 
 def get_image_files():
 
-    image_files = []
+    image_keys = (
+        list_images()
+    )
 
-    for path in IMAGE_DIR.rglob("*"):
-
+    return [
+        key
+        for key in image_keys
         if (
-            path.is_file()
-            and path.suffix.lower()
+            Path(key)
+            .suffix
+            .lower()
             in IMAGE_EXTENSIONS
-        ):
-            image_files.append(
-                path
-            )
-
-    return image_files
+        )
+    ]
 
 
 # =========================================================
-# DB에 저장된 이미지 존재 여부
+# DB image_path → S3 Key 변환
+# =========================================================
+
+def image_path_to_s3_key(
+    image_path: str,
+) -> str:
+
+    normalized = (
+        image_path
+        .replace(
+            "\\",
+            "/",
+        )
+        .lstrip("/")
+    )
+
+
+    # 기존 DB:
+    # images/음식명/파일.jpg
+
+    if normalized.startswith(
+        f"{AWS_S3_IMAGE_PREFIX}/"
+    ):
+        return (
+            normalize_s3_key(
+                normalized
+            )
+        )
+
+
+    # 혹시 DB에 images가 없는 경우
+
+    return normalize_s3_key(
+        f"{AWS_S3_IMAGE_PREFIX}/"
+        f"{normalized}"
+    )
+
+
+# =========================================================
+# DB 이미지 존재 여부
 # =========================================================
 
 def embedding_exists(
@@ -281,11 +378,15 @@ def embedding_exists(
         ),
     )
 
-    result = cursor.fetchone()
+    result = (
+        cursor.fetchone()
+    )
 
     conn.close()
 
-    return result is not None
+    return (
+        result is not None
+    )
 
 
 # =========================================================
@@ -305,7 +406,8 @@ def save_embedding(
 
     cursor.execute(
         """
-        INSERT OR REPLACE INTO image_embeddings (
+        INSERT OR REPLACE
+        INTO image_embeddings (
             food_name,
             image_path,
             description,
@@ -349,24 +451,35 @@ def load_embeddings():
         """
     )
 
-    rows = cursor.fetchall()
+    rows = (
+        cursor.fetchall()
+    )
 
     conn.close()
 
     results = []
 
+
     for row in rows:
 
         results.append(
             {
-                "food_name": row[0],
-                "image_path": row[1],
-                "description": row[2],
-                "embedding": json.loads(
-                    row[3]
-                ),
+                "food_name":
+                    row[0],
+
+                "image_path":
+                    row[1],
+
+                "description":
+                    row[2],
+
+                "embedding":
+                    json.loads(
+                        row[3]
+                    ),
             }
         )
+
 
     return results
 
@@ -381,13 +494,15 @@ def search_similar_images(
     top_k: int = 5,
 ):
 
-    # -----------------------------------------
+    # -----------------------------------------------------
     # 1. 사용자 이미지 분석
-    # -----------------------------------------
+    # -----------------------------------------------------
 
-    query_description = describe_image(
-        image_bytes=image_bytes,
-        filename=filename,
+    query_description = (
+        describe_image(
+            image_bytes=image_bytes,
+            filename=filename,
+        )
     )
 
     print(
@@ -396,55 +511,78 @@ def search_similar_images(
     )
 
 
-    # -----------------------------------------
+    # -----------------------------------------------------
     # 2. 사용자 이미지 임베딩
-    # -----------------------------------------
+    # -----------------------------------------------------
 
-    query_embedding = create_embedding(
-        query_description
+    query_embedding = (
+        create_embedding(
+            query_description
+        )
     )
 
 
-    # -----------------------------------------
-    # 3. 기존 DB 임베딩 불러오기
-    # -----------------------------------------
+    # -----------------------------------------------------
+    # 3. 기존 임베딩 DB
+    # -----------------------------------------------------
 
-    stored_images = load_embeddings()
+    stored_images = (
+        load_embeddings()
+    )
 
     print(
-        f"저장된 이미지 임베딩 수: "
-        f"{len(stored_images)}"
+        "저장된 이미지 임베딩 수:",
+        len(stored_images),
     )
 
 
     if not stored_images:
 
         raise ValueError(
-            "저장된 이미지 임베딩이 없습니다. "
-            "build_embeddings.py를 먼저 실행해주세요."
+            "저장된 이미지 임베딩이 없습니다."
         )
 
 
-    # -----------------------------------------
+    # -----------------------------------------------------
     # 4. 유사도 계산
-    # -----------------------------------------
+    # -----------------------------------------------------
 
     results = []
 
+
     for item in stored_images:
 
-        similarity = cosine_similarity(
-            query_embedding,
-            item["embedding"],
+        similarity = (
+            cosine_similarity(
+                query_embedding,
+                item["embedding"],
+            )
         )
+
+
+        s3_key = (
+            image_path_to_s3_key(
+                item[
+                    "image_path"
+                ]
+            )
+        )
+
 
         results.append(
             {
                 "food_name":
-                    item["food_name"],
+                    item[
+                        "food_name"
+                    ],
 
                 "image_path":
-                    item["image_path"],
+                    item[
+                        "image_path"
+                    ],
+
+                "s3_key":
+                    s3_key,
 
                 "similarity":
                     similarity,
@@ -452,35 +590,60 @@ def search_similar_images(
         )
 
 
-    # -----------------------------------------
-    # 5. 높은 순 정렬
-    # -----------------------------------------
+    # -----------------------------------------------------
+    # 5. 유사도 높은 순 정렬
+    # -----------------------------------------------------
 
     results.sort(
-        key=lambda x: x["similarity"],
+        key=lambda x:
+            x["similarity"],
         reverse=True,
     )
 
 
-    # -----------------------------------------
+    # -----------------------------------------------------
     # 6. TOP K
-    # -----------------------------------------
+    # -----------------------------------------------------
 
-    top_results = results[:top_k]
+    top_results = (
+        results[:top_k]
+    )
 
+
+    # -----------------------------------------------------
+    # 7. S3 URL 생성
+    # -----------------------------------------------------
 
     for index, result in enumerate(
         top_results,
         start=1,
     ):
 
-        result["rank"] = index
-
-        result["similarity"] = round(
-            result["similarity"],
-            4,
+        result["rank"] = (
+            index
         )
 
+        result["similarity"] = (
+            round(
+                result[
+                    "similarity"
+                ],
+                4,
+            )
+        )
+
+        result["image_url"] = (
+            get_image_url(
+                result[
+                    "s3_key"
+                ]
+            )
+        )
+
+
+    # -----------------------------------------------------
+    # 8. 결과 반환
+    # -----------------------------------------------------
 
     return {
         "query_description":
