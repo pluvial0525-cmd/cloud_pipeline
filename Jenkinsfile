@@ -11,7 +11,7 @@ pipeline {
 
         APP_NAME = "ksm_project"
 
-        AWS_HOST = "여기에_EC2_PUBLIC_IP"
+        AWS_HOST = "15.165.43.54"
 
         AWS_USER = "ubuntu"
 
@@ -79,7 +79,7 @@ pipeline {
                 echo "Docker 이미지 Build 테스트"
 
                 sh '''
-                    docker compose build
+                    docker-compose build
                 '''
 
             }
@@ -118,6 +118,7 @@ pipeline {
                         --exclude='.idea' \
                         --exclude='.venv' \
                         --exclude='node_modules' \
+                        --exclude='backend/images' \
                         ./ \
                         ${AWS_USER}@${AWS_HOST}:${DEPLOY_PATH}/
 
@@ -154,11 +155,11 @@ pipeline {
 
                             cd ${DEPLOY_PATH}
 
-                            docker compose down
+                            docker-compose down
 
-                            docker compose build
+                            docker-compose build
 
-                            docker compose up -d
+                            docker-compose up -d
 
                             docker image prune -f
 
@@ -197,7 +198,7 @@ pipeline {
 
                             cd ${DEPLOY_PATH}
 
-                            docker compose ps
+                            docker-compose ps
 
                         '
 
