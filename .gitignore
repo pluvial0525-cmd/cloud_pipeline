@@ -1,0 +1,80 @@
+# ==============================
+# Python / FastAPI
+# ==============================
+
+
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/images
+jenkins
+
+*.pyc
+*.pyo
+*.pyd
+
+# 환경변수 / API Key
+.env
+backend/.env
+frontend/.env
+*.env
+
+# Image RAG DB
+*.db
+*.sqlite
+*.sqlite3
+
+# ==============================
+# React / Vite
+# ==============================
+
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ==============================
+# JetBrains
+# IntelliJ / WebStorm / PyCharm
+# ==============================
+
+.idea/
+*.iml
+
+# ==============================
+# VS Code
+# ==============================
+
+.vscode/
+
+# ==============================
+# OS
+# ==============================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==============================
+# Logs
+# ==============================
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==============================
+# Docker
+# ==============================
+
+docker-data/
+
+# ==============================
+# Temporary files
+# ==============================
+
+*.tmp
+*.temp
+*.swp
+*~

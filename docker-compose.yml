@@ -1,0 +1,59 @@
+services:
+
+  # =======================================================
+  # FastAPI Backend
+  # =======================================================
+
+  backend:
+
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: ksm_backend
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    expose:
+      - "8000"
+
+    networks:
+      - ksm_network
+
+
+  # =======================================================
+  # React + Nginx
+  # =======================================================
+
+  nginx:
+
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+
+    container_name: ksm_nginx
+
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+
+    depends_on:
+      - backend
+
+    networks:
+      - ksm_network
+
+
+# =========================================================
+# Network
+# =========================================================
+
+networks:
+
+  ksm_network:
+
+    driver: bridge
