@@ -7,28 +7,117 @@ import ImageResult
     from "../components/ImageResult";
 
 import {
+    logout,
+} from "../api/authApi";
+
+import {
     useImageRagMutation,
 } from "../query/imageRagQuery";
 
 
 function ImageRagPage() {
+
     const imageRagMutation =
         useImageRagMutation();
 
 
+    const user = JSON.parse(
+        localStorage.getItem(
+            "user"
+        )
+        || "null"
+    );
+
+
+    // =====================================================
+    // Image RAG 검색
+    // =====================================================
+
     const handleSearch = (
         file,
     ) => {
+
         imageRagMutation.mutate({
             file,
             topK: 5,
         });
+
+    };
+
+
+    // =====================================================
+    // 로그아웃
+    // =====================================================
+
+    const handleLogout = async () => {
+
+        try {
+
+            if (user?.id) {
+
+                await logout(
+                    user.id
+                );
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "로그아웃 API 오류:",
+                error
+            );
+
+        } finally {
+
+            // ================================================
+            // 브라우저 로그인 정보 삭제
+            // ================================================
+
+            localStorage.removeItem(
+                "access_token"
+            );
+
+            localStorage.removeItem(
+                "user"
+            );
+
+
+            // ================================================
+            // 로그인 페이지로 완전히 이동
+            // ================================================
+
+            window.location.href =
+                "/login";
+
+        }
+
     };
 
 
     return (
         <Page>
             <Container>
+
+                <TopBar>
+                    <UserInfo>
+                        {
+                            user?.username
+                                ? `${user.username}님`
+                                : "사용자"
+                        }
+                    </UserInfo>
+
+                    <LogoutButton
+                        onClick={
+                            handleLogout
+                        }
+                    >
+                        로그아웃
+                    </LogoutButton>
+                </TopBar>
+
+
                 <Header>
                     <Badge>
                         IMAGE RAG
@@ -70,27 +159,31 @@ function ImageRagPage() {
                 </Content>
 
 
-                {imageRagMutation
-                    .isError && (
-                    <ErrorBox>
-                        검색 중 오류가
-                        발생했습니다.
+                {
+                    imageRagMutation
+                        .isError
+                    && (
+                        <ErrorBox>
+                            검색 중 오류가
+                            발생했습니다.
 
-                        <br />
+                            <br />
 
-                        {
-                            imageRagMutation
-                                .error
-                                ?.response
-                                ?.data
-                                ?.detail
-                            ||
-                            imageRagMutation
-                                .error
-                                ?.message
-                        }
-                    </ErrorBox>
-                )}
+                            {
+                                imageRagMutation
+                                    .error
+                                    ?.response
+                                    ?.data
+                                    ?.detail
+                                ||
+                                imageRagMutation
+                                    .error
+                                    ?.message
+                            }
+                        </ErrorBox>
+                    )
+                }
+
             </Container>
         </Page>
     );
@@ -100,16 +193,20 @@ function ImageRagPage() {
 export default ImageRagPage;
 
 
+/* =========================================================
+   Style
+========================================================= */
+
 const Page = styled.div`
     min-height: 100vh;
 
     background:
-        radial-gradient(
-            circle at top,
-            #1b2035 0%,
-            #0d1017 42%,
-            #080a0f 100%
-        );
+            radial-gradient(
+                    circle at top,
+                    #1b2035 0%,
+                    #0d1017 42%,
+                    #080a0f 100%
+            );
 
     color: white;
 `;
@@ -117,17 +214,75 @@ const Page = styled.div`
 
 const Container = styled.div`
     width: min(
-        1180px,
-        calc(
-            100% - 40px
-        )
+            1180px,
+            calc(
+                    100% - 40px
+            )
     );
 
     margin: 0 auto;
 
-    padding: 70px 0;
+    padding: 35px 0 70px;
 `;
 
+
+/* =========================================================
+   Top Bar
+========================================================= */
+
+const TopBar = styled.div`
+    display: flex;
+
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 14px;
+
+    margin-bottom: 35px;
+`;
+
+
+const UserInfo = styled.div`
+    color: #929baa;
+
+    font-size: 14px;
+`;
+
+
+const LogoutButton = styled.button`
+    padding: 10px 16px;
+
+    border-radius: 10px;
+
+    border: 1px solid
+    rgba(
+            255,
+            255,
+            255,
+            0.1
+    );
+
+    background: #151a23;
+
+    color: white;
+
+    font-size: 14px;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+
+    &:hover {
+        border-color: #8170ff;
+
+        background: #1b2130;
+    }
+`;
+
+
+/* =========================================================
+   Header
+========================================================= */
 
 const Header = styled.div`
     margin-bottom: 45px;
@@ -198,6 +353,10 @@ const Subtitle = styled.p`
 `;
 
 
+/* =========================================================
+   Content
+========================================================= */
+
 const Content = styled.div`
     display: grid;
 
@@ -224,6 +383,10 @@ const Content = styled.div`
 `;
 
 
+/* =========================================================
+   Error
+========================================================= */
+
 const ErrorBox = styled.div`
     margin-top: 20px;
 
@@ -232,20 +395,20 @@ const ErrorBox = styled.div`
     border-radius: 14px;
 
     border: 1px solid
-        rgba(
+    rgba(
             255,
             90,
             90,
             0.3
-        );
+    );
 
     background:
-        rgba(
-            255,
-            90,
-            90,
-            0.08
-        );
+            rgba(
+                    255,
+                    90,
+                    90,
+                    0.08
+            );
 
     color: #ff9b9b;
 

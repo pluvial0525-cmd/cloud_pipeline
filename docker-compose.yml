@@ -1,7 +1,27 @@
 services:
 
   # =======================================================
+  # Redis
+  # 로그인 세션 / JWT 저장
+  # =======================================================
+
+  redis:
+    image: redis:7-alpine
+
+    container_name: ksm_redis
+
+    restart: unless-stopped
+
+    volumes:
+      - redis_data:/data
+
+    networks:
+      - ksm_network
+
+
+  # =======================================================
   # FastAPI Backend
+  # PostgreSQL은 AWS RDS 사용
   # =======================================================
 
   backend:
@@ -19,6 +39,9 @@ services:
 
     expose:
       - "8000"
+
+    depends_on:
+      - redis
 
     networks:
       - ksm_network
@@ -46,6 +69,15 @@ services:
 
     networks:
       - ksm_network
+
+
+# =========================================================
+# Volumes
+# =========================================================
+
+volumes:
+
+  redis_data:
 
 
 # =========================================================

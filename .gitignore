@@ -83,4 +83,5 @@ docker-data/
 *.db
 
 # Image RAG DB는 예외로 포함
-!backend/image_rag.db
+!backend/image_rag.db.env.aws
+.env.aws

@@ -5,3 +5,9 @@ python-dotenv
 openai
 boto3
 Pillow
+sqlalchemy
+psycopg[binary]
+redis
+python-jose[cryptography]
+bcrypt
+email-validator
