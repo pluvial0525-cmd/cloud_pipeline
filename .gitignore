@@ -78,3 +78,9 @@ docker-data/
 *.temp
 *.swp
 *~
+
+# 모든 db 제외
+*.db
+
+# Image RAG DB는 예외로 포함
+!backend/image_rag.db
