@@ -58,7 +58,9 @@ pipeline {
                 ]) {
 
                     sh '''
+                        rm -f .env
                         cp "$ENV_FILE" .env
+                        chmod 600 .env
                     '''
 
                 }
