@@ -52,38 +52,51 @@ function ImageResult({
                                 `${item.rank}-${item.image_path}`
                             }
                         >
-                            <Rank>
-                                #
-                                {
-                                    item.rank
-                                }
-                            </Rank>
+                            {/* S3 이미지 */}
+                            {item.image_url && (
+                                <ImageWrapper>
+                                    <ResultImage
+                                        src={item.image_url}
+                                        alt={item.food_name}
+                                    />
+                                </ImageWrapper>
+                            )}
 
-                            <FoodName>
-                                {
-                                    item.food_name
-                                }
-                            </FoodName>
 
-                            <Similarity>
-                                유사도{" "}
+                            <CardContent>
+                                <Rank>
+                                    #
+                                    {
+                                        item.rank
+                                    }
+                                </Rank>
 
-                                <strong>
-                                    {(
-                                        item.similarity
-                                        * 100
-                                    ).toFixed(
-                                        1,
-                                    )}
-                                    %
-                                </strong>
-                            </Similarity>
+                                <FoodName>
+                                    {
+                                        item.food_name
+                                    }
+                                </FoodName>
 
-                            <Path>
-                                {
-                                    item.image_path
-                                }
-                            </Path>
+                                <Similarity>
+                                    유사도{" "}
+
+                                    <strong>
+                                        {(
+                                            item.similarity
+                                            * 100
+                                        ).toFixed(
+                                            1,
+                                        )}
+                                        %
+                                    </strong>
+                                </Similarity>
+
+                                <Path>
+                                    {
+                                        item.image_path
+                                    }
+                                </Path>
+                            </CardContent>
                         </ResultCard>
                     ),
                 )}
@@ -118,20 +131,20 @@ const EmptyCard = styled.div`
     border-radius: 24px;
 
     border: 1px solid
-        rgba(
+    rgba(
             255,
             255,
             255,
             0.08
-        );
+    );
 
     background:
-        rgba(
-            255,
-            255,
-            255,
-            0.04
-        );
+            rgba(
+                    255,
+                    255,
+                    255,
+                    0.04
+            );
 
     color: #707785;
 `;
@@ -145,12 +158,12 @@ const AnalysisCard = styled.div`
     background: #151a23;
 
     border: 1px solid
-        rgba(
+    rgba(
             255,
             255,
             255,
             0.08
-        );
+    );
 `;
 
 
@@ -183,10 +196,10 @@ const ResultHeader = styled.div`
     display: flex;
 
     justify-content:
-        space-between;
+            space-between;
 
     align-items:
-        flex-end;
+            flex-end;
 `;
 
 
@@ -204,8 +217,8 @@ const ResultGrid = styled.div`
         repeat(
             2,
             minmax(
-                0,
-                1fr
+                    0,
+                    1fr
             )
         );
 
@@ -223,34 +236,77 @@ const ResultGrid = styled.div`
 const ResultCard = styled.div`
     position: relative;
 
-    padding: 22px;
+    overflow: hidden;
 
     border-radius: 18px;
 
     background: #161c25;
 
     border: 1px solid
-        rgba(
+    rgba(
             255,
             255,
             255,
             0.07
-        );
+    );
 
     transition: 0.2s;
 
     &:hover {
         transform:
-            translateY(-3px);
+                translateY(-3px);
 
         border-color:
-            rgba(
-                124,
-                92,
-                255,
-                0.5
-            );
+                rgba(
+                        124,
+                        92,
+                        255,
+                        0.5
+                );
     }
+`;
+
+
+/* =========================================
+   S3 이미지
+========================================= */
+
+const ImageWrapper = styled.div`
+    width: 100%;
+
+    height: 210px;
+
+    overflow: hidden;
+
+    background: #0d1118;
+`;
+
+
+const ResultImage = styled.img`
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+
+    transition: transform 0.3s ease;
+
+    ${ResultCard}:hover & {
+        transform: scale(1.03);
+    }
+`;
+
+
+/* =========================================
+   카드 내용
+========================================= */
+
+const CardContent = styled.div`
+    position: relative;
+
+    padding: 22px;
 `;
 
 
@@ -295,12 +351,12 @@ const Path = styled.div`
     padding-top: 14px;
 
     border-top: 1px solid
-        rgba(
+    rgba(
             255,
             255,
             255,
             0.06
-        );
+    );
 
     color: #606978;
 
